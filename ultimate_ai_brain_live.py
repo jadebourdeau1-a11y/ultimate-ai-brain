@@ -1,74 +1,81 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from data_gathering_multi import get_portfolio_prices
-from ml_prediction import predict_price_change
-from decision_making import make_decision
-from execution import execute_trade
-from portfolio_manager import update_portfolio, portfolio_summary
+from datetime import datetime
+from portfolio_manager import portfolio_summary, update_portfolio
 
-st.set_page_config(page_title="Ultimate AI Brain", layout="wide")
+# --------------------------
+# Mock live prices (replace with your API or ML predictions)
+prices = {
+    "BTC": 30000,
+    "ETH": 2000,
+    "AAPL": 150,
+    "TSLA": 800
+}
 
+# --------------------------
+# Streamlit caching for portfolio history
+if "portfolio_history" not in st.session_state:
+    st.session_state.portfolio_history = []
+
+# --------------------------
+st.set_page_config(page_title="Ultimate AI Brain LIVE", layout="wide")
 st.title("Ultimate AI Brain LIVE Dashboard")
 
-# --- Manual Controls ---
+# --------------------------
 st.sidebar.header("Manual Controls / Risk Settings")
-manual_buy = st.sidebar.text_input("Manual BUY (asset:quantity, e.g., BTC:0.01)")
-manual_sell = st.sidebar.text_input("Manual SELL (asset:quantity, e.g., AAPL:1)")
-refresh_interval = st.sidebar.slider("Refresh Interval (seconds)", 5, 300, 30)
-max_alloc = st.sidebar.slider("Max Allocation per Asset (%)", 10, 100, 50)
-stop_loss = st.sidebar.slider("Stop-Loss (%)", 1, 50, 5)
-take_profit = st.sidebar.slider("Take-Profit (%)", 1, 50, 10)
+asset_input = st.sidebar.text_input("Asset (e.g., BTC, AAPL)")
+quantity_input = st.sidebar.number_input("Quantity", min_value=0.0, step=0.01)
+action_input = st.sidebar.selectbox("Action", ["BUY", "SELL"])
 
-# --- Asset list ---
-tickers = ["AAPL", "GOOG", "TSLA", "BTC-USD", "ETH-USD"]
+if st.sidebar.button("Execute Trade"):
+    if asset_input and quantity_input > 0:
+        update_portfolio(asset_input, quantity_input, action_input)
+        st.sidebar.success(f"{action_input} executed for {quantity_input} {asset_input}")
+    else:
+        st.sidebar.warning("Please enter valid asset and quantity.")
 
-# --- Fetch prices ---
-prices = get_portfolio_prices(tickers)
+# --------------------------
+# Portfolio summary table
+st.header("Portfolio Summary")
+try:
+    df, total_value = portfolio_summary(prices)
+except Exception as e:
+    st.error(f"Error calculating portfolio: {e}")
+    df = pd.DataFrame(columns=["Asset", "Quantity", "Value"])
+    total_value = 0
 
-# --- ML Predictions ---
-predictions = {t: predict_price_change(t) for t in tickers}
-
-# --- Recommendations ---
-recommendations = {t: make_decision(predictions[t], prices[t], stop_loss, take_profit) for t in tickers}
-
-# --- Display Prices & Recommendations ---
-st.subheader("Live Prices & ML Recommendations")
-price_df = pd.DataFrame({
-    "Ticker": tickers,
-    "Current Price": [prices[t] for t in tickers],
-    "Prediction": [predictions[t] for t in tickers],
-    "Recommendation": [recommendations[t] for t in tickers]
-})
-st.dataframe(price_df)
-
-# --- Execute Manual Trades ---
-if manual_buy:
-    try:
-        t, q = manual_buy.split(":")
-        execute_trade(t, "BUY", float(q), prices[t])
-        update_portfolio(t, "BUY", float(q), prices[t])
-    except:
-        st.error("Invalid manual buy input")
-if manual_sell:
-    try:
-        t, q = manual_sell.split(":")
-        execute_trade(t, "SELL", float(q), prices[t])
-        update_portfolio(t, "SELL", float(q), prices[t])
-    except:
-        st.error("Invalid manual sell input")
-
-# --- Portfolio Summary ---
-st.subheader("Portfolio Summary")
-df, total_value = portfolio_summary(prices)
-st.write(f"Total Portfolio Value: ${total_value:.2f}")
 st.dataframe(df)
+st.metric("Total Portfolio Value", f"${total_value:,.2f}")
 
-# --- Charts ---
-st.subheader("Portfolio Distribution")
-fig = px.pie(df, names="Ticker", values="Value", title="Portfolio Allocation")
-st.plotly_chart(fig, use_container_width=True)
+# --------------------------
+# Record portfolio history for chart
+st.session_state.portfolio_history.append({"time": datetime.now(), "total_value": total_value})
 
-st.subheader("Trade Predictions vs Recommendations")
-fig2 = px.bar(price_df, x="Ticker", y="Prediction", color="Recommendation", title="ML Predictions")
-st.plotly_chart(fig2, use_container_width=True)
+history_df = pd.DataFrame(st.session_state.portfolio_history)
+
+# --------------------------
+# Portfolio Value Over Time
+st.header("Portfolio Value Over Time")
+if len(history_df) > 0:
+    fig_value = px.line(history_df, x="time", y="total_value",
+                        title="Portfolio Total Value Over Time",
+                        labels={"time": "Time", "total_value": "Total Value ($)"})
+    st.plotly_chart(fig_value, use_container_width=True)
+
+# --------------------------
+# Asset Allocation Pie Chart
+st.header("Asset Allocation")
+if len(df) > 0 and df["Value"].sum() > 0:
+    fig_pie = px.pie(df, names="Asset", values="Value", title="Asset Allocation by Value")
+    st.plotly_chart(fig_pie, use_container_width=True)
+
+# --------------------------
+# Live Prices
+st.header("Live Prices")
+st.dataframe(pd.DataFrame(prices.items(), columns=["Asset", "Price"]))
+
+# --------------------------
+# ML Predictions / Recommendations (placeholder)
+st.header("ML Predictions / Recommendations")
+st.info("ML Predictions will appear here once implemented.")

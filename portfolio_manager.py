@@ -1,40 +1,38 @@
 import pandas as pd
 
-portfolio = {}
+# Example portfolio, replace with your dynamic portfolio if needed
+portfolio = {
+    "BTC": 0.1,
+    "ETH": 1.5,
+    "AAPL": 2,
+    "TSLA": 1
+}
 
-def update_portfolio(ticker, action, quantity, price):
-    global portfolio
-    if ticker not in portfolio:
-        portfolio[ticker] = {"quantity": 0, "avg_price": 0}
-    if action == "BUY":
-        total_cost = portfolio[ticker]["avg_price"] * portfolio[ticker]["quantity"] + price * quantity
-        portfolio[ticker]["quantity"] += quantity
-        portfolio[ticker]["avg_price"] = total_cost / portfolio[ticker]["quantity"]
-    elif action == "SELL":
-        portfolio[ticker]["quantity"] -= quantity
-        if portfolio[ticker]["quantity"] <= 0:
-            portfolio[ticker]["quantity"] = 0
-            portfolio[ticker]["avg_price"] = 0
+def portfolio_summary(prices):
+    """
+    Returns a DataFrame with portfolio summary and total value.
+    Prices is a dict like {"BTC": 30000, "ETH": 2000, "AAPL": 150}
+    """
+    # Create DataFrame from portfolio
+    df = pd.DataFrame(list(portfolio.items()), columns=["Asset", "Quantity"])
 
-def portfolio_summary(current_prices):
-    summary = []
-    total_value = 0
-    for t, data in portfolio.items():
-        qty = data["quantity"]
-        if qty == 0: continue
-        price = current_prices.get(t, 0)
-        value = qty * price
-        profit = (price - data["avg_price"]) * qty
-        total_value += value
-        summary.append({
-            "Ticker": t,
-            "Quantity": qty,
-            "Avg Price": data["avg_price"],
-            "Current Price": price,
-            "Value": value,
-            "Profit": profit
-        })
-    df = pd.DataFrame(summary)
+    # Calculate value safely
+    df["Value"] = df.apply(lambda row: row["Quantity"] * prices.get(row["Asset"], 0), axis=1)
+
+    # Round the Value column
     df["Value"] = df["Value"].round(2)
-    df["Profit"] = df["Profit"].round(2)
+
+    # Total portfolio value
+    total_value = df["Value"].sum()
+
     return df, total_value
+
+def update_portfolio(asset, quantity, action="BUY"):
+    """
+    Updates portfolio dictionary.
+    """
+    if action.upper() == "BUY":
+        portfolio[asset] = portfolio.get(asset, 0) + quantity
+    elif action.upper() == "SELL":
+        portfolio[asset] = max(portfolio.get(asset, 0) - quantity, 0)
+    return portfolio
