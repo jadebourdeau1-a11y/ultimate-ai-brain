@@ -1,15 +1,15 @@
-class Portfolio:
-    def __init__(self):
-        self.assets = {}
-        self.history = []
+from datetime import datetime
 
-    def update(self, trade):
-        t = trade['ticker']
-        self.assets[t] = self.assets.get(t, 0) + (1 if trade['action']=="BUY" else -1)
-        self.history.append(trade)
-
-    def summary(self):
-        return self.assets
-
-    def trade_log(self):
-        return self.history
+def get_portfolio_metrics():
+    # Placeholder portfolio metrics
+    return {
+        "value": 12450,
+        "daily_pnl": 245,
+        "total_trades": 45,
+        "performance": [
+            {"Time": datetime.now(), "Portfolio Value": 10000},
+            {"Time": datetime.now(), "Portfolio Value": 10100},
+            {"Time": datetime.now(), "Portfolio Value": 10250},
+            {"Time": datetime.now(), "Portfolio Value": 10300}
+        ]
+    }

@@ -1,3 +1,4 @@
-def predict_prices(prices):
-    # Dummy predictions: add +1% to each price
-    return {ticker: price * 1.01 for ticker, price in prices.items()}
+def predict_price(asset):
+    # Placeholder: Return current price + small random delta
+    import random
+    return round(random.uniform(0.98, 1.02), 2)

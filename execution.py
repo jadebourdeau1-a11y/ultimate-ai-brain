@@ -1,2 +1,3 @@
-def execute_trade(trade):
-    print(f"Executing {trade['action']} for {trade['ticker']} at {trade['price']}")
+def execute_trade(asset, action, quantity, price):
+    # Placeholder: Just print, no real trading
+    print(f"{action} {quantity} of {asset} at {price}")

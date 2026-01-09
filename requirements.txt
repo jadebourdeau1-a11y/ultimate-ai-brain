@@ -1,7 +1,3 @@
-pandas
 streamlit
-requests
-yfinance
-scikit-learn
-beautifulsoup4
-curl_cffi
+pandas
+altair
