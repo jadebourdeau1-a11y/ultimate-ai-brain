@@ -1,81 +1,58 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from datetime import datetime
-from portfolio_manager import portfolio_summary, update_portfolio
+import matplotlib.pyplot as plt
+from portfolio_manager import portfolio_summary, get_holdings, get_prices
+from ml_prediction import get_predictions
+import datetime
 
-# --------------------------
-# Mock live prices (replace with your API or ML predictions)
-prices = {
-    "BTC": 30000,
-    "ETH": 2000,
-    "AAPL": 150,
-    "TSLA": 800
-}
+st.set_page_config(page_title="Ultimate AI Brain Dashboard", layout="wide")
 
-# --------------------------
-# Streamlit caching for portfolio history
-if "portfolio_history" not in st.session_state:
-    st.session_state.portfolio_history = []
-
-# --------------------------
-st.set_page_config(page_title="Ultimate AI Brain LIVE", layout="wide")
 st.title("Ultimate AI Brain LIVE Dashboard")
 
-# --------------------------
-st.sidebar.header("Manual Controls / Risk Settings")
-asset_input = st.sidebar.text_input("Asset (e.g., BTC, AAPL)")
-quantity_input = st.sidebar.number_input("Quantity", min_value=0.0, step=0.01)
-action_input = st.sidebar.selectbox("Action", ["BUY", "SELL"])
+# --- Fetch portfolio data ---
+holdings = get_holdings()  # dict: {'Asset': 'quantity'}
+prices = get_prices(list(holdings.keys()))  # dict: {'Asset': price}
 
-if st.sidebar.button("Execute Trade"):
-    if asset_input and quantity_input > 0:
-        update_portfolio(asset_input, quantity_input, action_input)
-        st.sidebar.success(f"{action_input} executed for {quantity_input} {asset_input}")
-    else:
-        st.sidebar.warning("Please enter valid asset and quantity.")
-
-# --------------------------
-# Portfolio summary table
-st.header("Portfolio Summary")
-try:
-    df, total_value = portfolio_summary(prices)
-except Exception as e:
-    st.error(f"Error calculating portfolio: {e}")
-    df = pd.DataFrame(columns=["Asset", "Quantity", "Value"])
-    total_value = 0
-
-st.dataframe(df)
+# --- Portfolio summary ---
+df, total_value = portfolio_summary(prices, holdings)
+st.subheader("Portfolio Summary")
 st.metric("Total Portfolio Value", f"${total_value:,.2f}")
 
-# --------------------------
-# Record portfolio history for chart
-st.session_state.portfolio_history.append({"time": datetime.now(), "total_value": total_value})
+# --- Portfolio value over time ---
+st.subheader("Portfolio Value Over Time")
 
-history_df = pd.DataFrame(st.session_state.portfolio_history)
+# Generate historical data for demo (replace with real historical if available)
+history_file = "portfolio_history.csv"
+try:
+    history_df = pd.read_csv(history_file, parse_dates=["Date"])
+except FileNotFoundError:
+    history_df = pd.DataFrame(columns=["Date", "TotalValue"])
+history_df = history_df.append({"Date": datetime.date.today(), "TotalValue": total_value}, ignore_index=True)
+history_df.to_csv(history_file, index=False)
 
-# --------------------------
-# Portfolio Value Over Time
-st.header("Portfolio Value Over Time")
-if len(history_df) > 0:
-    fig_value = px.line(history_df, x="time", y="total_value",
-                        title="Portfolio Total Value Over Time",
-                        labels={"time": "Time", "total_value": "Total Value ($)"})
-    st.plotly_chart(fig_value, use_container_width=True)
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(history_df["Date"], history_df["TotalValue"], marker='o', linestyle='-')
+ax.set_xlabel("Date")
+ax.set_ylabel("Portfolio Value ($)")
+ax.set_title("Portfolio Value Over Time")
+st.pyplot(fig)
 
-# --------------------------
-# Asset Allocation Pie Chart
-st.header("Asset Allocation")
-if len(df) > 0 and df["Value"].sum() > 0:
-    fig_pie = px.pie(df, names="Asset", values="Value", title="Asset Allocation by Value")
-    st.plotly_chart(fig_pie, use_container_width=True)
+# --- Asset allocation ---
+st.subheader("Asset Allocation")
+allocation_df = df.copy()
+allocation_df["Percentage"] = allocation_df["Value"] / total_value * 100
+fig2, ax2 = plt.subplots(figsize=(6, 6))
+ax2.pie(allocation_df["Percentage"], labels=allocation_df["Asset"], autopct="%1.1f%%", startangle=90)
+ax2.axis('equal')
+st.pyplot(fig2)
 
-# --------------------------
-# Live Prices
-st.header("Live Prices")
-st.dataframe(pd.DataFrame(prices.items(), columns=["Asset", "Price"]))
+# --- Live prices ---
+st.subheader("Live Prices")
+live_prices_df = pd.DataFrame(list(prices.items()), columns=["Asset", "Price"])
+st.table(live_prices_df)
 
-# --------------------------
-# ML Predictions / Recommendations (placeholder)
-st.header("ML Predictions / Recommendations")
-st.info("ML Predictions will appear here once implemented.")
+# --- ML Predictions / Recommendations ---
+st.subheader("ML Predictions / Recommendations")
+predictions = get_predictions(list(holdings.keys()))  # dict: {'Asset': 'Buy/Hold/Sell'}
+pred_df = pd.DataFrame(list(predictions.items()), columns=["Asset", "Recommendation"])
+st.table(pred_df)
