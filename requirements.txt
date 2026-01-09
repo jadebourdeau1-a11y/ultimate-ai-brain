@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 pandas
 streamlit
 requests
@@ -5,3 +6,12 @@ yfinance
 scikit-learn
 beautifulsoup4
 curl_cffi
+=======
+pandas
+streamlit
+requests
+yfinance
+scikit-learn
+beautifulsoup4
+curl_cffi
+>>>>>>> f6b98ce059df2bfbd94c62f494194107f598079f
