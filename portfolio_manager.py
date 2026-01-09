@@ -1,15 +1,40 @@
-from datetime import datetime
+import pandas as pd
 
-def get_portfolio_metrics():
-    # Placeholder portfolio metrics
-    return {
-        "value": 12450,
-        "daily_pnl": 245,
-        "total_trades": 45,
-        "performance": [
-            {"Time": datetime.now(), "Portfolio Value": 10000},
-            {"Time": datetime.now(), "Portfolio Value": 10100},
-            {"Time": datetime.now(), "Portfolio Value": 10250},
-            {"Time": datetime.now(), "Portfolio Value": 10300}
-        ]
-    }
+portfolio = {}
+
+def update_portfolio(ticker, action, quantity, price):
+    global portfolio
+    if ticker not in portfolio:
+        portfolio[ticker] = {"quantity": 0, "avg_price": 0}
+    if action == "BUY":
+        total_cost = portfolio[ticker]["avg_price"] * portfolio[ticker]["quantity"] + price * quantity
+        portfolio[ticker]["quantity"] += quantity
+        portfolio[ticker]["avg_price"] = total_cost / portfolio[ticker]["quantity"]
+    elif action == "SELL":
+        portfolio[ticker]["quantity"] -= quantity
+        if portfolio[ticker]["quantity"] <= 0:
+            portfolio[ticker]["quantity"] = 0
+            portfolio[ticker]["avg_price"] = 0
+
+def portfolio_summary(current_prices):
+    summary = []
+    total_value = 0
+    for t, data in portfolio.items():
+        qty = data["quantity"]
+        if qty == 0: continue
+        price = current_prices.get(t, 0)
+        value = qty * price
+        profit = (price - data["avg_price"]) * qty
+        total_value += value
+        summary.append({
+            "Ticker": t,
+            "Quantity": qty,
+            "Avg Price": data["avg_price"],
+            "Current Price": price,
+            "Value": value,
+            "Profit": profit
+        })
+    df = pd.DataFrame(summary)
+    df["Value"] = df["Value"].round(2)
+    df["Profit"] = df["Profit"].round(2)
+    return df, total_value
