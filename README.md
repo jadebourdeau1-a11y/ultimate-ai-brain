@@ -1,15 +1,9 @@
-<<<<<<< HEAD
 # Ultimate AI Brain LIVE
 
-This is a fully interactive AI trading brain with:
+Interactive AI trading brain with:
 
-- Live prices (stocks/crypto)
-- ML predictions
-- AI buy/sell decisions
-- Trade simulation with logging
-- Pause/resume & manual trades
-- Streamlit dashboard
-=======
-# ultimate-ai-brain
-Live AI Brain dashboard for trading simulation &amp; predictions
->>>>>>> f6b98ce059df2bfbd94c62f494194107f598079f
+- Live prices (crypto + stocks)
+- ML-enhanced predictions
+- Automatic trading + risk management
+- Pause/resume & manual BUY/SELL
+- Streamlit Cloud live dashboard
